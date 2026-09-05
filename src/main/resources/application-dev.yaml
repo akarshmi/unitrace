@@ -1,0 +1,64 @@
+spring:
+  application:
+    name: UniTrace
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/unitrace}
+    username: ${DB_USER:postgres}
+    password: ${DB_PASSWORD:root}
+
+    driver-class-name: org.postgresql.Driver
+  data:
+    redis:
+      host: localhost
+      port: 6379
+  mail:
+    host: ${EMAIL_HOST:smtp.gmail.com}
+    port: ${EMAIL_PORT:587}
+    username: ${MAIL_USERNAME:algorithmiclyricist@gmail.com}
+    password: ${MAIL_PASSWORD}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+  security:
+    user:
+      name: user
+      password: user
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+  servlet:
+    multipart:
+      max-file-size: 5MB
+      max-request-size: 5MB
+
+server:
+  port: 8081
+
+
+unitrace:
+  otp:
+    secret: ${OTP_SECRET:qwertyuioasdfghjkzxcvbn}
+    ttl-minutes: 5
+    cooldown-seconds: 60
+    lockout-minutes: 5
+    max-attempt: 5
+  jwt:
+    secret: ${JWT_SECRET:jwtsecretkey123456789}
+    issuer: ${JWT_ISSUER:akarshmi.dev}
+    access-token-TTL: ${ACCESS_TOKEN_TTL:3600}
+    refresh-token-TTL: ${REFRESH_TOKEN_TTL:20160}
+    refresh-token-cookie-name: ${REFRESH_TOKEN_COOKIE_NAME:refreshToken}
+    cookie-name: ${COOKIE_NAME:refreshToken}
+    cookie-secure: ${COOKIE_SECURE:false}
+    cookie-http-only: ${COOKIE_ONLY:true}
+    cookie-path: ${COOKIE_PATH:/}
+    cookie-same-site: ${COOKIE_SAME_SITE:lax}
+    cookie-domain: ${COOKIE_DOMAIN:}
+  cloudinary:
+    cloud-name: ${CLOUDINARY_CLOUD_NAME}
+    api-key: ${CLOUDINARY_API_KEY}
+    api-secret: ${CLOUDINARY_API_SECRET}
