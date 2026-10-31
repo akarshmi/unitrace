@@ -1,8 +1,6 @@
 package dev.akarshmi.UniTrace.modules.item.service.serviceImpl;
 
 
-import dev.akarshmi.UniTrace.modules.item.dto.*;
-import dev.akarshmi.UniTrace.modules.item.entity.*;
 import dev.akarshmi.UniTrace.modules.auth.security.JwtService;
 import dev.akarshmi.UniTrace.modules.exceptions.customExceptions.ItemNotFoundException;
 import dev.akarshmi.UniTrace.modules.exceptions.customExceptions.NotItemOwnerException;
@@ -12,6 +10,7 @@ import dev.akarshmi.UniTrace.modules.item.dto.UpdateItemStatusRequest;
 import dev.akarshmi.UniTrace.modules.item.entity.Item;
 import dev.akarshmi.UniTrace.modules.item.entity.ItemStatus;
 import dev.akarshmi.UniTrace.modules.item.entity.ItemType;
+import dev.akarshmi.UniTrace.modules.item.event.ItemCreatedEvent;
 import dev.akarshmi.UniTrace.modules.item.repository.ItemRepository;
 import dev.akarshmi.UniTrace.modules.item.service.ItemService;
 import dev.akarshmi.UniTrace.modules.user.entity.User;
@@ -19,6 +18,7 @@ import dev.akarshmi.UniTrace.modules.user.repository.UserRepository;
 import dev.akarshmi.UniTrace.modules.utils.services.CloudinaryService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -35,6 +35,7 @@ public class ItemServiceImpl implements ItemService {
     private final JwtService jwtService;
     private final UserRepository userRepository;
     private final CloudinaryService cloudinaryService;
+    private final ApplicationEventPublisher events;
 
 
     @Override
@@ -48,6 +49,11 @@ public class ItemServiceImpl implements ItemService {
 
         User reporter = userRepository.findById(userId).orElseThrow(() -> new IllegalArgumentException("Authenticated user not found."));
 
+        if (itemRequest.getEventFrom() != null && itemRequest.getEventTo() != null
+                && itemRequest.getEventFrom().isAfter(itemRequest.getEventTo())) {
+            throw new IllegalArgumentException("eventFrom must not be after eventTo.");
+        }
+
         //submit the request first then create
         CloudinaryService.UploadResult upload = cloudinaryService.upload(itemRequest.getImage());
 
@@ -56,13 +62,18 @@ public class ItemServiceImpl implements ItemService {
                 .title(itemRequest.getTitle())
                 .description(itemRequest.getDescription())
                 .location(itemRequest.getLocation())
+                .eventFrom(itemRequest.getEventFrom())
+                .eventTo(itemRequest.getEventTo())
                 .imageUrl(upload.url())
                 .imagePublicId(upload.publicId())
                 .reportedBy(reporter)
                 .build();
 
-        itemRepository.save(item);
-        return ItemResponse.from(item);
+        Item saved = itemRepository.save(item);
+
+        // After commit, ItemEmbeddingJob embeds this item and then runs matching.
+        events.publishEvent(new ItemCreatedEvent(saved.getId()));
+        return ItemResponse.from(saved);
     }
 
     @Override
@@ -78,6 +89,7 @@ public class ItemServiceImpl implements ItemService {
     }
 
     @Override
+    @Transactional
     public ItemResponse updateStatus(UUID id, UpdateItemStatusRequest updateRequest, HttpServletRequest request) {
         String header = request.getHeader("Authorization");
         String token = header.substring(7);

@@ -1,12 +1,13 @@
 package dev.akarshmi.UniTrace.modules.item.entity;
 
-
-import dev.akarshmi.UniTrace.modules.item.dto.GeoLocation;
 import dev.akarshmi.UniTrace.modules.user.entity.User;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.Array;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.UpdateTimestamp;
+import org.hibernate.type.SqlTypes;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -46,8 +47,12 @@ public class Item {
     @Column(nullable = false, length = 255)
     private String location;
 
-    //adding geo location
+    // when the item was lost / found (optional; time score is neutral while null)
+    @Column(name = "event_from")
+    private Instant eventFrom;
 
+    @Column(name = "event_to")
+    private Instant eventTo;
 
     // images uploading
     @Column(name = "image_url")
@@ -56,6 +61,40 @@ public class Item {
     @Column(name = "image_public_id")
     private String imagePublicId;
 
+    // ---- AI embeddings (written by ItemEmbeddingJob through native queries) ----
+    @JdbcTypeCode(SqlTypes.VECTOR)
+    @Array(length = 384)
+    @Column(name = "text_embedding")
+    private float[] textEmbedding;
+
+    @JdbcTypeCode(SqlTypes.VECTOR)
+    @Array(length = 512)
+    @Column(name = "image_embedding")
+    private float[] imageEmbedding;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "embedding_status", length = 15)
+    @Builder.Default
+    private EmbeddingStatus embeddingStatus = EmbeddingStatus.PENDING;
+
+    @Column(name = "embedding_attempts")
+    private Integer embeddingAttempts;
+
+    @Column(name = "embedding_next_attempt_at")
+    private Instant embeddingNextAttemptAt;
+
+    @Column(name = "embedded_at")
+    private Instant embeddedAt;
+
+    @Column(name = "embedding_error", length = 500)
+    private String embeddingError;
+
+    // ---- physical drop-off at the Security Office / Lost & Found desk ----
+    @Column(name = "desk_received_at")
+    private Instant deskReceivedAt;
+
+    @Column(name = "desk_received_by")
+    private UUID deskReceivedBy;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "reported_by", nullable = false, updatable = false)
@@ -91,5 +130,10 @@ public class Item {
 
     public void close() {
         this.status = ItemStatus.CLOSED;
+    }
+
+    public void markReceivedAtDesk(Instant at, UUID moderatorId) {
+        this.deskReceivedAt = at;
+        this.deskReceivedBy = moderatorId;
     }
 }

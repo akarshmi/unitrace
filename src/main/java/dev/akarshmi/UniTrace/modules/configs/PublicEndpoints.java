@@ -13,6 +13,7 @@ public class PublicEndpoints {
             "/api/uni/v1/auth/registration/initiation",
             "/api/uni/v1/auth/registration/verification",
             "/api/uni/v1/auth/login",
-            "/api/uni/v1/auth/refresh"
+            "/api/uni/v1/auth/refresh",
+            "/swagger-ui.html"
     );
     }

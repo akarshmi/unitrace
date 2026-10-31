@@ -17,7 +17,10 @@ public record ItemResponse(
 //        GeoLocation geoLocation,
         String imageUrl,
         String reportedByName,
-        Instant createdAt
+        Instant createdAt,
+        Instant eventFrom,
+        Instant eventTo,
+        Instant deskReceivedAt
 ) {
     public static ItemResponse from(Item item) {
         return new ItemResponse(
@@ -29,7 +32,10 @@ public record ItemResponse(
                 item.getLocation(),
                 item.getImageUrl(),
                 item.getReportedBy().getFullName(),
-                item.getCreatedAt()
+                item.getCreatedAt(),
+                item.getEventFrom(),
+                item.getEventTo(),
+                item.getDeskReceivedAt()
         );
     }
 }

@@ -21,19 +21,31 @@ public class EmailSender {
 
     public void sendOtpEmail(String toEmail, String otp, long ttlMinutes) {
         try {
-            MimeMessage message = mailSender.createMimeMessage();
-            MimeMessageHelper helper = new MimeMessageHelper(message, false, "UTF-8");
-
-            helper.setFrom(fromAddress);
-            helper.setTo(toEmail);
-            helper.setSubject("Your UniTrace verification code");
-            helper.setText(buildBody(otp, ttlMinutes), false);
-
-            mailSender.send(message);
+            send(toEmail, "Your UniTrace verification code", buildBody(otp, ttlMinutes));
         } catch (MessagingException e) {
             log.error("Failed to send OTP email to {}", toEmail, e);
             throw new IllegalStateException("Unable to send verification email. Please try again.", e);
         }
+    }
+
+    /** Generic plain-text mail used by match notifications. Throws IllegalStateException on failure. */
+    public void sendPlainEmail(String toEmail, String subject, String body) {
+        try {
+            send(toEmail, subject, body);
+        } catch (MessagingException e) {
+            log.error("Failed to send email '{}' to {}", subject, toEmail, e);
+            throw new IllegalStateException("Unable to send email.", e);
+        }
+    }
+
+    private void send(String toEmail, String subject, String body) throws MessagingException {
+        MimeMessage message = mailSender.createMimeMessage();
+        MimeMessageHelper helper = new MimeMessageHelper(message, false, "UTF-8");
+        helper.setFrom(fromAddress);
+        helper.setTo(toEmail);
+        helper.setSubject(subject);
+        helper.setText(body, false);
+        mailSender.send(message);
     }
 
     private String buildBody(String otp, long ttlMinutes) {

@@ -38,27 +38,35 @@ public class SecurityConfig {
                                 "/api/uni/v1/auth/registration/initiation",
                                 "/api/uni/v1/auth/registration/verification",
                                 "/api/uni/v1/auth/login",
-                                "/api/uni/v1/auth/refresh"
+                                "/api/uni/v1/auth/refresh",
+                                "/swagger-ui/**",
+                                "/v3/api-docs/**",
+                                "/swagger-ui.html"
                         ).permitAll()
+                        // Lost & Found Desk (moderation, handover): staff only
+                        .requestMatchers("/api/uni/v1/desk/**").hasAnyRole("MODERATOR", "ADMIN")
                         .anyRequest().authenticated()
                 )
-                .exceptionHandling(exHandler -> exHandler.authenticationEntryPoint((request, response, authException) -> {
-                    log.error("Authentication failed", authException);
-                    response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-                    response.setContentType(MediaType.APPLICATION_JSON_VALUE);
-
-                    ErrorResponse errorResponse = new ErrorResponse(
-                            "Unauthorized Access",
-                            "error",
-                            HttpServletResponse.SC_UNAUTHORIZED,
-                            Instant.now().toString(),
-                            request.getRequestURI()
-                    );
-                    objectMapper.writeValue(response.getWriter(), errorResponse);
-                })
+                .exceptionHandling(exHandler -> exHandler
+                        .authenticationEntryPoint((request, response, authException) -> {
+                            log.error("Authentication failed", authException);
+                            writeError(response, HttpServletResponse.SC_UNAUTHORIZED, "Unauthorized Access",
+                                    request.getRequestURI());
+                        })
+                        .accessDeniedHandler((request, response, accessDeniedException) ->
+                                writeError(response, HttpServletResponse.SC_FORBIDDEN,
+                                        "You do not have permission to perform this action.",
+                                        request.getRequestURI()))
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
-                //add jwt filter
         return http.build();
+    }
+
+    private void writeError(HttpServletResponse response, int status, String message, String path)
+            throws java.io.IOException {
+        response.setStatus(status);
+        response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+        objectMapper.writeValue(response.getWriter(),
+                new ErrorResponse(message, "error", status, Instant.now().toString(), path));
     }
 }

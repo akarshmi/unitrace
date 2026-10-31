@@ -6,8 +6,6 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
 
-import java.util.Collections;
-import java.util.List;
 import java.util.UUID;
 
 @Entity
@@ -16,7 +14,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @Table(name = "users")
-public class User { 
+public class User {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -49,8 +47,9 @@ public class User {
     @Column(nullable = false)
     private boolean verified = false;
 
-    public String getFullName(){
-        return firstName + " " + lastName;
+    /** Null-safe (a missing last name no longer renders as "John null"). */
+    public String getFullName() {
+        String last = lastName == null ? "" : lastName.strip();
+        return (firstName == null ? "" : firstName.strip() + (last.isEmpty() ? "" : " ")) + last;
     }
-    //this is it for now.
 }
