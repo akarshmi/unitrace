@@ -71,3 +71,8 @@ CREATE TABLE matches (
 
 CREATE INDEX idx_matches_lost_item ON matches (lost_item_id);
 CREATE INDEX idx_matches_found_item ON matches (found_item_id);
+
+ALTER TABLE matches DROP COLUMN IF EXISTS similarity_score;
+
+CREATE INDEX IF NOT EXISTS idx_items_text_embedding_hnsw
+    ON items USING hnsw (text_embedding vector_cosine_ops);

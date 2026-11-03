@@ -31,14 +31,17 @@ public class MatchMapper {
 
     public MatchResponse toStudent(Match m, UUID viewerId) {
         boolean isLostOwner = m.getLostItem().getReportedBy().getId().equals(viewerId);
+        Item own = isLostOwner ? m.getLostItem() : m.getFoundItem();
         Item other = isLostOwner ? m.getFoundItem() : m.getLostItem();
         return new MatchResponse(m.getId(), m.getStatus(),
                 isLostOwner ? "LOST_OWNER" : "FOUND_OWNER",
                 (int) Math.round(m.getFinalScore() * 100),
-                studentView(other),
+                m.getFinalScore(), m.getTextScore(), m.isImageCompared(), m.getImageScore(), m.getTimeScore(),
+                studentView(own), studentView(other),
+                isLostOwner && m.getStatus() == MatchStatus.APPROVED && m.getHandoverKeyHash() != null,
                 isLostOwner && m.getStatus() == MatchStatus.APPROVED ? m.getHandoverKeyExpiresAt() : null,
                 nextStep(m, isLostOwner),
-                m.getCreatedAt());
+                m.getCreatedAt(), m.getReviewedAt(), m.getCompletedAt());
     }
 
     private String nextStep(Match m, boolean isLostOwner) {
@@ -46,21 +49,23 @@ public class MatchMapper {
             return "Handover completed.";
         }
         if (m.getStatus() != MatchStatus.APPROVED) {
-            return "";
+            return "Your match is awaiting Campus Security review.";
         }
         Item found = m.getFoundItem();
         if (isLostOwner) {
-            return "Visit the Security Office with your university ID and the handover key e-mailed to you.";
+            return found.getDeskReceivedAt() == null
+                    ? "Your match has been approved. Collection will be available once Campus Security receives the physical item."
+                    : "Your item is ready for collection. Visit the Security Office with your university ID. A handover key has been issued; email delivery status is not available here.";
         }
         return found.getDeskReceivedAt() == null
-                ? "Please hand the item in at the Security Office before the drop-off deadline."
-                : "The Security Office has your item. Thank you!";
+                ? "Please bring the found item to the Campus Security Office. The item must be physically received before collection can be authorized."
+                : "Campus Security has received your item. It is now in university custody.";
     }
 
     private MatchItemView studentView(Item i) {
         return new MatchItemView(i.getId(), i.getType(), i.getTitle(), i.getDescription(), i.getLocation(),
                 i.getImageUrl(), i.getStatus(), i.getEventFrom(), i.getEventTo(),
-                i.getDeskReceivedAt() != null, dropOff.deadlineFor(i.getCreatedAt()));
+                i.getCreatedAt(), i.getDeskReceivedAt(), dropOff.deadlineFor(i.getCreatedAt()));
     }
 
     private DeskItemView deskView(Item i) {

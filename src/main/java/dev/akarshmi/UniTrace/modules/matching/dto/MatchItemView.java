@@ -17,6 +17,7 @@ public record MatchItemView(
         ItemStatus status,
         Instant eventFrom,
         Instant eventTo,
-        boolean receivedAtDesk,
+        Instant createdAt,
+        Instant deskReceivedAt,
         Instant dropOffDeadline) {
 }

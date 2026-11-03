@@ -20,8 +20,9 @@ import lombok.RequiredArgsConstructor;
 @Transactional(readOnly = true)
 public class MatchQueryService {
 
-    /** Students only see matches after the desk has approved them. */
-    private static final List<MatchStatus> VISIBLE = List.of(MatchStatus.APPROVED, MatchStatus.COMPLETED);
+    /** Students see their own pending candidates and matches that reached an actionable outcome. */
+    private static final List<MatchStatus> VISIBLE = List.of(
+            MatchStatus.PENDING, MatchStatus.APPROVED, MatchStatus.COMPLETED);
 
     private final MatchRepository matches;
     private final UserRepository users;

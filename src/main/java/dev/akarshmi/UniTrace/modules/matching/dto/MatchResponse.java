@@ -9,12 +9,19 @@ import dev.akarshmi.UniTrace.modules.matching.entity.MatchStatus;
 public record MatchResponse(
         UUID id,
         MatchStatus status,
-        /** LOST_OWNER or FOUND_OWNER: the viewer's side of the match. */
         String yourRole,
-        /** Rounded 0-100 confidence from the AI score. */
         int confidencePercent,
+        double finalScore,
+        double textScore,
+        boolean imageCompared,
+        double imageScore,
+        double timeScore,
+        MatchItemView yourItem,
         MatchItemView otherItem,
+        boolean handoverKeyIssued,
         Instant handoverKeyExpiresAt,
         String nextStep,
-        Instant createdAt) {
+        Instant createdAt,
+        Instant reviewedAt,
+        Instant completedAt) {
 }
